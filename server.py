@@ -38,6 +38,7 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
         with self.lock:
             topic = request.topic
             message = request.message
+            logger.info(f"Mensaje publicado en {topic}: {message}")
             if topic not in self.queues:
                 self.queues[topic] = queue.Queue(maxsize=5)
             try:
@@ -59,11 +60,13 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
             subscriber = Subscriber(context)
             self.subscribers[topic].append(subscriber)
         threading.Thread(target=self._send_messages_to_subscriber, args=(topic, subscriber)).start()
+        logger.info(f"Cliente suscrito a {topic} en el hilo {threading.get_ident()}")
         return subscriber.get_response_stream()
 
     def _send_messages_to_subscriber(self, topic, subscriber):
         while True:
             message = self.queues[topic].get()
+            logger.info(f"Mensaje enviado a suscriptor de {topic}: {message}")
             subscriber.send_message(message)
 
 
@@ -73,20 +76,29 @@ class Subscriber:
         self.messages = []
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
+        self.semaphore = threading.Semaphore(1)  # Inicializar el semáforo a 1
+        self.sent_messages = set()  # Conjunto para mantener registro de mensajes enviados
 
     def send_message(self, message):
+        self.semaphore.acquire()  # Decrementar el semáforo, bloquear si el semáforo es 0
         with self.condition:
-            self.messages.append(message)
-            self.condition.notify()
+            if message not in self.sent_messages:  # Verificar si el mensaje ya se ha enviado
+                self.messages.append(message)
+                self.sent_messages.add(message)  # Agregar el mensaje al registro de mensajes enviados
+                logger.info(f"Mensaje enviado: {message}")  # Agregar registro
+                self.condition.notify()
+        self.semaphore.release()  # Liberar el semáforo fuera del bloque if
 
     def get_response_stream(self):
         while True:
             with self.condition:
                 while not self.messages and self.context.is_active():
                     self.condition.wait()
-                if not self.context.is_active():
+                if not self.messages and not self.context.is_active():
                     break
                 message = self.messages.pop(0)
+                logger.info(f"Mensaje consumido en el hilo {threading.get_ident()}: {message}")
+                self.semaphore.release()  # Incrementar el semáforo
                 yield service_pb2.SubscribeReply(message=message)
 
 def serve():
