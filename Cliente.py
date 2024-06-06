@@ -22,8 +22,7 @@ def main():
         print("\nMenú principal:")
         print("1. Suscribirse a un tema")
         print("2. Publicar un mensaje")
-        print("3. Cancelar la suscripción a un tema")
-        print("4. Salir")
+        print("3. Salir")
 
         choice = input("Seleccione una opción (1/2/3/4): ")
 
@@ -46,9 +45,6 @@ def main():
             message = input("Ingrese el mensaje que desea publicar: ")
             publish_message(stub, topic, message)
         elif choice == '3':
-            # Implementar la lógica para cancelar la suscripción a un tema
-            pass
-        elif choice == '4':
             print("Saliendo del programa. ¡Hasta luego!")
             break
         else:
