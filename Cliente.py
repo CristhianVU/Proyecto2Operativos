@@ -8,9 +8,12 @@ def publish_message(stub, topic, message):
     print(f"Estado de publicación: {response.status}")
 
 def subscribe_to_topic(stub, topic):
-    responses = stub.Subscribe(service_pb2.SubscribeRequest(topic=topic))
-    for response in responses:
-        print(f"Mensaje recibido en {topic}: {response.message}")
+    try:
+        responses = stub.Subscribe(service_pb2.SubscribeRequest(topic=topic))
+        for response in responses:
+            print(f"Mensaje recibido en {topic}: {response.message}")
+    except grpc.RpcError as e:
+        print(f"Error al suscribirse al tema {topic}: {e}")
 
 def main():
     channel = grpc.insecure_channel('localhost:50051')
@@ -22,10 +25,9 @@ def main():
         print("\nMenú principal:")
         print("1. Suscribirse a un tema")
         print("2. Publicar un mensaje")
-        print("3. Cancelar la suscripción a un tema")
-        print("4. Salir")
+        print("3. Salir")
 
-        choice = input("Seleccione una opción (1/2/3/4): ")
+        choice = input("Seleccione una opción (1/2/3): ")
 
         if choice == '1':
             print("Temas disponibles para suscripción:")
@@ -46,9 +48,6 @@ def main():
             message = input("Ingrese el mensaje que desea publicar: ")
             publish_message(stub, topic, message)
         elif choice == '3':
-            # Implementar la lógica para cancelar la suscripción a un tema
-            pass
-        elif choice == '4':
             print("Saliendo del programa. ¡Hasta luego!")
             break
         else:
