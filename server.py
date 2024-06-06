@@ -41,10 +41,10 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
             if topic not in self.queues:
                 self.queues[topic] = queue.Queue(maxsize=5)
             try:
-                self.queues[topic].put(message, block=False)
+                self.queues[topic].put(message)
                 if topic in self.subscribers:
                     for subscriber in self.subscribers[topic]:
-                        subscriber.put(message)
+                        subscriber.send_message(message)
                 return service_pb2.PublishReply(status="Message published")
             except queue.Full:
                 return service_pb2.PublishReply(status="Queue is full")
@@ -56,34 +56,38 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
                 self.queues[topic] = queue.Queue(maxsize=5)
             if topic not in self.subscribers:
                 self.subscribers[topic] = []
-            subscriber_queue = queue.Queue(maxsize=5)
-            self.subscribers[topic].append(subscriber_queue)
+            subscriber = Subscriber(context)
+            self.subscribers[topic].append(subscriber)
+        threading.Thread(target=self._send_messages_to_subscriber, args=(topic, subscriber)).start()
+        return subscriber.get_response_stream()
+
+    def _send_messages_to_subscriber(self, topic, subscriber):
         while True:
-            try:
-                message = subscriber_queue.get(block=True)
-                yield service_pb2.SubscribeReply(message=message)
-            except queue.Empty:
-                continue
+            message = self.queues[topic].get()
+            subscriber.send_message(message)
+
 
 class Subscriber:
     def __init__(self, context):
         self.context = context
         self.messages = []
         self.lock = threading.Lock()
+        self.condition = threading.Condition(self.lock)
 
     def send_message(self, message):
-        with self.lock:
+        with self.condition:
             self.messages.append(message)
+            self.condition.notify()
 
-    def get_response_stream(self, semaphore):
+    def get_response_stream(self):
         while True:
-            if self.context.is_active():
-                semaphore.acquire()
-                with self.lock:
-                    if self.messages:
-                        yield service_pb2.SubscribeReply(message=self.messages.pop(0))
-            else:
-                break
+            with self.condition:
+                while not self.messages and self.context.is_active():
+                    self.condition.wait()
+                if not self.context.is_active():
+                    break
+                message = self.messages.pop(0)
+                yield service_pb2.SubscribeReply(message=message)
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
