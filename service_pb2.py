@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rservice.proto\x12\rmessagebroker\"0\n\x0ePublishRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1e\n\x0cPublishReply\x12\x0e\n\x06status\x18\x01 \x01(\t\"!\n\x10SubscribeRequest\x12\r\n\x05topic\x18\x01 \x01(\t\"!\n\x0eSubscribeReply\x12\x0f\n\x07message\x18\x01 \x01(\t2\xa5\x01\n\rMessageBroker\x12\x45\n\x07Publish\x12\x1d.messagebroker.PublishRequest\x1a\x1b.messagebroker.PublishReply\x12M\n\tSubscribe\x12\x1f.messagebroker.SubscribeRequest\x1a\x1d.messagebroker.SubscribeReply0\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rservice.proto\x12\rmessagebroker\"0\n\x0ePublishRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1e\n\x0cPublishReply\x12\x0e\n\x06status\x18\x01 \x01(\t\"<\n\x10SubscribeRequest\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x19\n\x11view_old_messages\x18\x02 \x01(\x08\"!\n\x0eSubscribeReply\x12\x0f\n\x07message\x18\x01 \x01(\t2\xa5\x01\n\rMessageBroker\x12\x45\n\x07Publish\x12\x1d.messagebroker.PublishRequest\x1a\x1b.messagebroker.PublishReply\x12M\n\tSubscribe\x12\x1f.messagebroker.SubscribeRequest\x1a\x1d.messagebroker.SubscribeReply0\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -26,9 +26,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_PUBLISHREPLY']._serialized_start=82
   _globals['_PUBLISHREPLY']._serialized_end=112
   _globals['_SUBSCRIBEREQUEST']._serialized_start=114
-  _globals['_SUBSCRIBEREQUEST']._serialized_end=147
-  _globals['_SUBSCRIBEREPLY']._serialized_start=149
-  _globals['_SUBSCRIBEREPLY']._serialized_end=182
-  _globals['_MESSAGEBROKER']._serialized_start=185
-  _globals['_MESSAGEBROKER']._serialized_end=350
+  _globals['_SUBSCRIBEREQUEST']._serialized_end=174
+  _globals['_SUBSCRIBEREPLY']._serialized_start=176
+  _globals['_SUBSCRIBEREPLY']._serialized_end=209
+  _globals['_MESSAGEBROKER']._serialized_start=212
+  _globals['_MESSAGEBROKER']._serialized_end=377
 # @@protoc_insertion_point(module_scope)

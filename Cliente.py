@@ -17,6 +17,7 @@ def main():
     stub = service_pb2_grpc.MessageBrokerStub(channel)
 
     topics = ["topic1", "topic2", "topic3"]
+    selected_topics = []
 
     while True:
         print("\nMenú principal:")
@@ -24,8 +25,9 @@ def main():
         print("2. Publicar un mensaje")
         print("3. Cancelar la suscripción a un tema")
         print("4. Salir")
+        print("5. Ver mensajes de un tema suscrito")
 
-        choice = input("Seleccione una opción (1/2/3/4): ")
+        choice = input("Seleccione una opción (1/2/3/4/5): ")
 
         if choice == '1':
             print("Temas disponibles para suscripción:")
@@ -51,8 +53,25 @@ def main():
         elif choice == '4':
             print("Saliendo del programa. ¡Hasta luego!")
             break
+        elif choice == '5':
+            view_subscribed_topic_messages(stub, selected_topics)
         else:
             print("Opción no válida. Inténtalo de nuevo.")
+
+def view_subscribed_topic_messages(stub, selected_topics):
+    print("Temas a los que está suscrito:")
+    for i, topic in enumerate(selected_topics):
+        print(f"{i + 1}. {topic}")
+    selected_topic = input("Ingrese el número del tema del que desea ver los mensajes: ")
+    selected_topic = selected_topics[int(selected_topic) - 1]
+    responses = stub.Subscribe(service_pb2.SubscribeRequest(topic=selected_topic, view_old_messages=True))
+    messages = [response.message for response in responses]
+    if messages:
+        print(f"Mensajes en {selected_topic}:")
+        for message in messages:
+            print(message)
+    else:
+        print("No hay mensajes antiguos en este tema.")
 
 if __name__ == '__main__':
     main()

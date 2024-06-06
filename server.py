@@ -5,6 +5,8 @@ import threading
 import logging
 import service_pb2
 import service_pb2_grpc
+from collections import defaultdict
+from queue import Queue
 
 # Configuración del logger
 logger = logging.getLogger('MessageBroker')
@@ -29,7 +31,8 @@ logger.addHandler(console_handler)
 
 class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
     def __init__(self):
-        self.subscribers = {}
+        self.subscribers = defaultdict(dict)
+        self.message_queues = defaultdict(lambda: Queue(maxsize=5))  # Colas de mensajes por tema
         self.lock = threading.Lock()
         self.semaphore = threading.Semaphore(0)
 
@@ -42,7 +45,13 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
                     for subscriber in subscribers:
                         subscriber.send_message(message)
                         self.semaphore.release()
-            logger.info(f"Mensaje enviado al tema {topic}")
+            else:
+                # Si no hay suscriptores, guardar el mensaje en la cola correspondiente
+                if not self.message_queues[topic].full():
+                    self.message_queues[topic].put(message)
+                    logger.info(f"Mensaje almacenado en cola para el tema {topic}")
+                else:
+                    logger.warning(f"Cola llena para el tema {topic}. Mensaje descartado.")
         return service_pb2.PublishReply(status="Message published")
 
     def Subscribe(self, request, context):
@@ -56,6 +65,11 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
             subscriber = Subscriber(context)
             self.subscribers[topic][client_id].append(subscriber)
             logger.info(f"Nuevo cliente suscrito al tema {topic}")
+            # Consumir mensajes de la cola si hay mensajes pendientes
+            for message in list(self.message_queues[topic].queue):
+                subscriber.send_message(message)
+                self.semaphore.release()
+                logger.info(f"Mensaje enviado a nuevo suscriptor en el tema {topic}")
         return subscriber.get_response_stream(self.semaphore)
 
     def Unsubscribe(self, request, context):
@@ -83,13 +97,17 @@ class Subscriber:
         with self.lock:
             self.messages.append(message)
 
-    def get_response_stream(self, semaphore):
+    def get_response_stream(self, semaphore, view_old_messages=False):
         while True:
             if self.context.is_active():
                 semaphore.acquire()
                 with self.lock:
-                    if self.messages:
+                    if not self.messages and view_old_messages:
+                        semaphore.release()
+                        break
+                    elif self.messages:
                         yield service_pb2.SubscribeReply(message=self.messages.pop(0))
+                        semaphore.release()
             else:
                 break
 
