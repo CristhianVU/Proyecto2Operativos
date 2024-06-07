@@ -16,7 +16,7 @@ def main():
     channel = grpc.insecure_channel('localhost:50051')
     stub = service_pb2_grpc.MessageBrokerStub(channel)
 
-    topics = ["topic1", "topic2", "topic3"]
+    topics = ["tema1", "tema2", "tema3"]
 
     while True:
         print("\nMenú principal:")
@@ -24,27 +24,40 @@ def main():
         print("2. Publicar un mensaje")
         print("3. Salir")
 
-        choice = input("Seleccione una opción (1/2/3): ")
+        opcion = input("Seleccione una opción (1/2/3): ")
 
-        if choice == '1':
+        if opcion == '1':
             print("Temas disponibles para suscripción:")
             for i, topic in enumerate(topics):
                 print(f"{i + 1}. {topic}")
-            selected_topics = input("Ingrese los números de los temas a los que desea suscribirse (separados por comas): ")
-            selected_topics = selected_topics.split(',')
-            selected_topics = [topics[int(i) - 1] for i in selected_topics]
+            while True:
+                selected_topics = input(
+                    "Ingrese los números de los temas a los que desea suscribirse (separados por comas): ")
+                selected_topics = selected_topics.split(',')
+                try:
+                    selected_topics = [int(i) for i in selected_topics]
+                    if all(1 <= i <= 3 for i in selected_topics):
+                        break
+                    else:
+                        print("Error: Todos los números deben estar entre 1 y 3. Intente de nuevo.")
+                except ValueError:
+                    print("Error: Por favor, ingrese números válidos. Intente de nuevo.")
+
+            selected_topics = [topics[i - 1] for i in selected_topics]
+
             for topic in selected_topics:
                 t = threading.Thread(target=subscribe_to_topic, args=(stub, topic))
                 t.daemon = True
                 t.start()
-        elif choice == '2':
-            topic = input("Ingrese el tema al que desea publicar: ")
+                print(f"Te has suscrito a {topic}!")
+        elif opcion == '2':
+            topic = input("Ingrese el tema al que desea publicar (tema1/tema2/tema3): ")
             if topic not in topics:
                 print("Tema no válido. Inténtalo de nuevo.")
                 continue
             message = input("Ingrese el mensaje que desea publicar: ")
             publish_message(stub, topic, message)
-        elif choice == '3':
+        elif opcion == '3':
             print("Saliendo del programa. ¡Hasta luego!")
             break
         else:

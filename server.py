@@ -46,10 +46,10 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
                 if topic in self.subscribers:
                     for subscriber in self.subscribers[topic]:
                         subscriber.send_message(message)
-                return service_pb2.PublishReply(status="Message published")
+                return service_pb2.PublishReply(status="Mensaje publicado")
             except queue.Full:
                 logger.warning(f"La cola para {topic} está llena. No se puede publicar el mensaje.")
-                return service_pb2.PublishReply(status="Queue is full")
+                return service_pb2.PublishReply(status="La cola esta llena!!!")
 
     def Subscribe(self, request, context):
         topic = request.topic
@@ -72,13 +72,13 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
                     self.subscribers[topic].remove(subscriber)
                 break
             try:
-                message = self.queues[topic].get(timeout=1)  # Utiliza un timeout para evitar el bloqueo indefinido
+                message = self.queues[topic].get(timeout=1)
                 logger.info(f"Mensaje enviado a suscriptor de {topic}: {message}")
                 subscriber.send_message(message)
             except queue.Empty:
                 continue
             except Exception as e:
-                logger.error(f"Error enviando mensaje a suscriptor de {topic}: {e}")
+                logger.error(f"Error enviando el mensaje a suscriptor de {topic}: {e}")
                 break
 
 
@@ -88,18 +88,18 @@ class Subscriber:
         self.messages = []
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
-        self.semaphore = threading.Semaphore(1)  # Inicializar el semáforo a 1
-        self.sent_messages = set()  # Conjunto para mantener registro de mensajes enviados
+        self.semaphore = threading.Semaphore(1)
+        self.sent_messages = set()
 
     def send_message(self, message):
-        self.semaphore.acquire()  # Decrementar el semáforo, bloquear si el semáforo es 0
+        self.semaphore.acquire()
         with self.condition:
-            if message not in self.sent_messages:  # Verificar si el mensaje ya se ha enviado
+            if message not in self.sent_messages:
                 self.messages.append(message)
-                self.sent_messages.add(message)  # Agregar el mensaje al registro de mensajes enviados
-                logger.info(f"Mensaje enviado: {message}")  # Agregar registro
+                self.sent_messages.add(message)
+                logger.info(f"Mensaje enviado: {message}")
                 self.condition.notify()
-        self.semaphore.release()  # Liberar el semáforo fuera del bloque if
+        self.semaphore.release()
 
     def get_response_stream(self):
         while True:
@@ -110,7 +110,7 @@ class Subscriber:
                     break
                 message = self.messages.pop(0)
                 logger.info(f"Mensaje consumido en el hilo {threading.get_ident()}: {message}")
-                self.semaphore.release()  # Incrementar el semáforo
+                self.semaphore.release()
                 yield service_pb2.SubscribeReply(message=message)
 
 def serve():
