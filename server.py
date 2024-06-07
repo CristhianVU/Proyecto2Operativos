@@ -66,10 +66,17 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
 
     def _send_messages_to_subscriber(self, topic, subscriber):
         while True:
+            if not subscriber.context.is_active():
+                logger.info(f"Cliente desconectado del tema {topic}, terminando hilo {threading.get_ident()}")
+                with self.lock:
+                    self.subscribers[topic].remove(subscriber)
+                break
             try:
-                message = self.queues[topic].get()
+                message = self.queues[topic].get(timeout=1)  # Utiliza un timeout para evitar el bloqueo indefinido
                 logger.info(f"Mensaje enviado a suscriptor de {topic}: {message}")
                 subscriber.send_message(message)
+            except queue.Empty:
+                continue
             except Exception as e:
                 logger.error(f"Error enviando mensaje a suscriptor de {topic}: {e}")
                 break
