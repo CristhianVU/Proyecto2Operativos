@@ -43,7 +43,7 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
                         subscriber.send_message(message)
                         self.semaphore.release()
             logger.info(f"Mensaje enviado al tema {topic}")
-        return service_pb2.PublishReply(status="Message published")
+        return service_pb2.PublishReply(status="Mensaje publicado!")
 
     def Subscribe(self, request, context):
         topic = request.topic
@@ -71,7 +71,7 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
                 if not self.subscribers[topic]:
                     del self.subscribers[topic]  # Eliminar el tema si no tiene suscriptores
                 logger.info(f"Cliente desuscrito del tema {topic}")
-        return service_pb2.UnsubscribeReply(status="Unsubscribed from topic")
+        return service_pb2.UnsubscribeReply(status="Te has desincrito! ")
 
 class Subscriber:
     def __init__(self, context):

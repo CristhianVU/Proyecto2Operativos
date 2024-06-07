@@ -32,12 +32,29 @@ def main():
             for i, topic in enumerate(topics):
                 print(f"{i + 1}. {topic}")
             selected_topics = input("Ingrese los números de los temas a los que desea suscribirse (separados por comas): ")
-            selected_topics = selected_topics.split(',')
-            selected_topics = [topics[int(i) - 1] for i in selected_topics]
+
+            #selected_topics = selected_topics.split(',')
+            #selected_topics = [topics[int(i) - 1] for i in selected_topics]
+
+            while True:
+                selected_topics = input(
+                    "Ingrese los números de los temas a los que desea suscribirse (separados por comas): ")
+                selected_topics = selected_topics.split(',')
+
+                try:
+                    selected_topics = [int(i) for i in selected_topics]
+                    if all(1 <= i <= 3 for i in selected_topics):
+                        break
+                    else:
+                        print("Error: Todos los números deben estar entre 1 y 3. Intente de nuevo.")
+                except ValueError:
+                    print("Error: Por favor, ingrese números válidos. Intente de nuevo.")
+            selected_topics = [topics[i - 1] for i in selected_topics]
             for topic in selected_topics:
                 t = threading.Thread(target=subscribe_to_topic, args=(stub, topic))
                 t.daemon = True
                 t.start()
+                print(f"Te has suscrito!")
         elif choice == '2':
             topic = input("Ingrese el tema al que desea publicar: ")
             if topic not in topics:
