@@ -24,7 +24,7 @@ def main():
         print("2. Publicar un mensaje")
         print("3. Salir")
 
-        choice = input("Seleccione una opción (1/2/3/4): ")
+        choice = input("Seleccione una opción (1/2/3): ")
 
         if choice == '1':
             print("Temas disponibles para suscripción:")

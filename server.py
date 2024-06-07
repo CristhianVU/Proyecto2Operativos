@@ -40,21 +40,22 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
             message = request.message
             logger.info(f"Mensaje publicado en {topic}: {message}")
             if topic not in self.queues:
-                self.queues[topic] = queue.Queue(maxsize=5)
+                self.queues[topic] = queue.Queue(maxsize=3)
             try:
-                self.queues[topic].put(message)
+                self.queues[topic].put_nowait(message)
                 if topic in self.subscribers:
                     for subscriber in self.subscribers[topic]:
                         subscriber.send_message(message)
                 return service_pb2.PublishReply(status="Message published")
             except queue.Full:
+                logger.warning(f"La cola para {topic} está llena. No se puede publicar el mensaje.")
                 return service_pb2.PublishReply(status="Queue is full")
 
     def Subscribe(self, request, context):
         topic = request.topic
         with self.lock:
             if topic not in self.queues:
-                self.queues[topic] = queue.Queue(maxsize=5)
+                self.queues[topic] = queue.Queue(maxsize=3)
             if topic not in self.subscribers:
                 self.subscribers[topic] = []
             subscriber = Subscriber(context)
@@ -65,9 +66,13 @@ class MessageBrokerServicer(service_pb2_grpc.MessageBrokerServicer):
 
     def _send_messages_to_subscriber(self, topic, subscriber):
         while True:
-            message = self.queues[topic].get()
-            logger.info(f"Mensaje enviado a suscriptor de {topic}: {message}")
-            subscriber.send_message(message)
+            try:
+                message = self.queues[topic].get()
+                logger.info(f"Mensaje enviado a suscriptor de {topic}: {message}")
+                subscriber.send_message(message)
+            except Exception as e:
+                logger.error(f"Error enviando mensaje a suscriptor de {topic}: {e}")
+                break
 
 
 class Subscriber:
