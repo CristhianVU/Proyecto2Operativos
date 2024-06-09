@@ -16,7 +16,7 @@ def main():
     channel = grpc.insecure_channel('localhost:50051')
     stub = service_pb2_grpc.MessageBrokerStub(channel)
 
-    topics = ["tema1", "tema2", "tema3"]
+    topics = ["Sistemas Operativos", "Redes", "Ciberseguridad"]
 
     while True:
         print("\nMenú principal:")
@@ -49,9 +49,9 @@ def main():
                 t = threading.Thread(target=subscribe_to_topic, args=(stub, topic))
                 t.daemon = True
                 t.start()
-                print(f"Te has suscrito a {topic}!")
+                print(f"Te has suscrito al tema de {topic}!")
         elif opcion == '2':
-            topic = input("Ingrese el tema al que desea publicar (tema1/tema2/tema3): ")
+            topic = input("Ingrese el tema al que desea publicar (Sistemas Operativos/Redes/Ciberseguridad): ")
             if topic not in topics:
                 print("Tema no válido. Inténtalo de nuevo.")
                 continue
